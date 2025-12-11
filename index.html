@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Icon Maker - Sfondo nero/bianco → Trasparente</title>
 
-  <!-- Fondamentale per Android / mobile -->
+  <!-- Mobile / Android -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 
   <style>
@@ -20,38 +20,84 @@
       background-size: cover;
       color: #f0f0f0;
       display: flex;
+      justify-content: center;
+      align-items: stretch;
+      overflow: hidden; /* niente scroll */
+    }
+
+    .app {
+      display: flex;
+      flex-direction: column;
+      width: 100vw;
+      height: 100vh;
+      box-sizing: border-box;
+    }
+
+    /* Banner in alto */
+    .top-banner {
+      background: #66cfff;           /* celeste */
+      color: #ffd800;                /* giallo */
+      text-align: center;
+      font-weight: bold;
+      text-shadow: 0 0 4px #000;
+      padding: 6px 4px;
+      font-size: 4.2vw;
+      flex: 0 0 auto;
+    }
+
+    /* Footer in basso */
+    .bottom-footer {
+      background: #66cfff;           /* celeste */
+      color: #ffd800;                /* giallo */
+      text-align: center;
+      font-weight: bold;
+      text-shadow: 0 0 4px #000;
+      padding: 6px 4px;
+      font-size: 4vw;
+      flex: 0 0 auto;
+    }
+
+    /* Area centrale */
+    .content {
+      flex: 1 1 auto;
+      display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
-      gap: 10px;
-      padding: 10px;
+      padding: 6px 8px;
       box-sizing: border-box;
-      min-height: 100vh;
-      overflow: hidden; /* niente scroll della pagina */
+      gap: 6px;
+    }
+
+    .logo {
+      max-height: 10vh;
+      max-width: 40vw;
+      object-fit: contain;
     }
 
     h1 {
-      font-size: 4.5vw; /* si adatta allo schermo */
-      margin: 5px 0 8px;
+      font-size: 4vw;
+      margin: 2px 0 4px;
       text-shadow: 0 0 5px #000;
       text-align: center;
     }
 
     .panel {
       background: rgba(0, 0, 0, 0.65);
-      padding: 10px;
+      padding: 8px;
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.6);
       max-width: 95vw;
       width: 95vw;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
       box-sizing: border-box;
+      flex: 0 0 auto;
     }
 
     label {
-      font-size: 3.4vw;
+      font-size: 3.3vw;
       display: block;
     }
 
@@ -64,16 +110,16 @@
 
     input[type="file"],
     input[type="range"] {
-      margin-top: 4px;
+      margin-top: 3px;
     }
 
     button {
-      padding: 8px;
+      padding: 6px;
       border-radius: 6px;
       border: none;
       cursor: pointer;
       font-weight: bold;
-      font-size: 3.6vw;
+      font-size: 3.4vw;
       background: #555;
       color: #fff;
       transition: background 0.2s;
@@ -94,14 +140,14 @@
     }
 
     #canvasContainer {
-      margin-top: 8px;
+      margin-top: 4px;
       background: rgba(0, 0, 0, 0.7);
-      padding: 8px;
+      padding: 6px;
       border-radius: 10px;
       max-width: 95vw;
       width: 95vw;
-      max-height: 45vh; /* parte bassa dello schermo */
       box-sizing: border-box;
+      flex: 1 1 auto;
 
       display: flex;
       align-items: center;
@@ -119,7 +165,7 @@
     .row {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 6px;
     }
 
     .row > * {
@@ -131,41 +177,58 @@
   <link rel="icon" href="favicon.png" type="image/png">
 </head>
 <body>
-  <h1>Icon Maker (sfondo nero/bianco → trasparente)</h1>
-
-  <div class="panel">
-    <label>
-      1) Carica immagine (es. la medaglia con sfondo nero o bianco):
-      <input type="file" id="fileInput" accept="image/*">
-    </label>
-
-    <label>
-      2) Soglia per il nero/bianco:
-      <span id="thresholdValue">10%</span>
-      <input type="range" id="threshold" min="0" max="80" value="10">
-      <span class="small">
-        Valore più alto = considera più colori come "nero" o "bianco".<br>
-        Per sfondo pieno spesso basta 10–25.
-      </span>
-    </label>
-
-    <div class="row">
-      <button id="removeBgBtn" disabled>3) Rimuovi sfondo nero/bianco</button>
+  <div class="app">
+    <!-- Banner superiore -->
+    <div class="top-banner">
+      BENVENUTO
     </div>
 
-    <div class="row">
-      <button id="downloadPngBtn" disabled>4) Scarica PNG trasparente</button>
-      <button id="downloadIcoBtn" disabled>5) Scarica ICO 256×256</button>
+    <!-- Contenuto centrale -->
+    <div class="content">
+      <!-- Logo -->
+      <img src="logo.png" alt="Logo" class="logo">
+
+      <h1>Icon Maker (sfondo nero/bianco → trasparente)</h1>
+
+      <div class="panel">
+        <label>
+          1) Carica immagine (es. la medaglia con sfondo nero o bianco):
+          <input type="file" id="fileInput" accept="image/*">
+        </label>
+
+        <label>
+          2) Soglia per il nero/bianco:
+          <span id="thresholdValue">10%</span>
+          <input type="range" id="threshold" min="0" max="80" value="10">
+          <span class="small">
+            Valore più alto = considera più colori come "nero" o "bianco".<br>
+            Per sfondo pieno spesso basta 10–25.
+          </span>
+        </label>
+
+        <div class="row">
+          <button id="removeBgBtn" disabled>3) Rimuovi sfondo nero/bianco</button>
+        </div>
+
+        <div class="row">
+          <button id="downloadPngBtn" disabled>4) Scarica PNG trasparente</button>
+          <button id="downloadIcoBtn" disabled>5) Scarica ICO 256×256</button>
+        </div>
+
+        <span class="small">
+          Flusso: carica immagine → rimuovi sfondo nero/bianco → scarica PNG o ICO.
+        </span>
+      </div>
+
+      <div id="canvasContainer">
+        <canvas id="canvas"></canvas>
+      </div>
     </div>
 
-    <span class="small">
-      Flusso: carica immagine → rimuovi sfondo nero/bianco → scarica PNG o ICO.<br>
-      Vedi il risultato direttamente nel canvas qui sotto.
-    </span>
-  </div>
-
-  <div id="canvasContainer">
-    <canvas id="canvas"></canvas>
+    <!-- Footer inferiore -->
+    <div class="bottom-footer">
+      GIOVANNI E STELLA
+    </div>
   </div>
 
   <script>
@@ -187,10 +250,11 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
 
-    // Adatta il canvas allo schermo verticale
-    function fitCanvasToViewport(imgWidth, imgHeight) {
-      const maxW = window.innerWidth * 0.85;  // 85% larghezza
-      const maxH = window.innerHeight * 0.40; // 40% altezza
+    // Adatta il canvas allo spazio disponibile nel container
+    function fitCanvasToContainer(imgWidth, imgHeight) {
+      const container = document.getElementById('canvasContainer');
+      const maxW = container.clientWidth * 0.95;
+      const maxH = container.clientHeight * 0.95;
 
       const scale = Math.min(maxW / imgWidth, maxH / imgHeight, 1);
 
@@ -215,10 +279,8 @@
       reader.onload = (event) => {
         img = new Image();
         img.onload = () => {
-          // Adattiamo il canvas alla dimensione schermo
-          fitCanvasToViewport(img.width, img.height);
+          fitCanvasToContainer(img.width, img.height);
           resetCanvas();
-          // Disegniamo già ridimensionata per stare nel canvas
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
           imageLoaded = true;
 
