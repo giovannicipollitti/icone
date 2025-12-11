@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Icon Maker - Ritaglio e Trasparenza</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #222;
+      color: #eee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 20px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 22px;
+    }
+
+    .panel {
+      background: #333;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 500px;
+      width: 100%;
+    }
+
+    label {
+      font-size: 14px;
+    }
+
+    input[type="file"],
+    input[type="range"],
+    button {
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    button {
+      padding: 8px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      background: #555;
+      color: #fff;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #777;
+    }
+
+    button.active {
+      background: #0088ff;
+    }
+
+    .small {
+      font-size: 12px;
+      color: #ccc;
+    }
+
+    #canvasContainer {
+      background: #111;
+      padding: 10px;
+      border-radius: 8px;
+    }
+
+    canvas {
+      background: #444;
+      border-radius: 4px;
+      cursor: crosshair;
+      image-rendering: pixelated;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .row > * {
+      flex: 1 1 150px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Icon Maker (ritaglio + sfondo trasparente)</h1>
+
+  <div class="panel">
+    <label>
+      1) Carica immagine:
+      <input type="file" id="fileInput" accept="image/*">
+    </label>
+
+    <div class="row">
+      <button id="pickBgBtn" disabled>
+        2) Clicca qui, poi scegli il colore di sfondo sull'immagine
+      </button>
+    </div>
+
+    <label>
+      Tolleranza colore sfondo
+      <input type="range" id="tolerance" min="0" max="80" value="25">
+      <span class="small">Più alto = rimuove più sfumature intorno al colore scelto.</span>
+    </label>
+
+    <div class="row">
+      <button id="cropBtn" disabled>3) Ritaglia ai bordi dell'oggetto</button>
+      <button id="downloadPngBtn" disabled>4) Scarica PNG 256×256</button>
+    </div>
+
+    <span class="small">
+      Suggerimento: usa immagini con sfondo uniforme (bianco, nero, un colore pieno).
+      Clicca sullo sfondo per renderlo trasparente, poi ritaglia, poi scarica.
+    </span>
+  </div>
+
+  <div id="canvasContainer">
+    <canvas id="canvas" width="400" height="400"></canvas>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const pickBgBtn = document.getElementById('pickBgBtn');
+    const toleranceInput = document.getElementById('tolerance');
+    const cropBtn = document.getElementById('cropBtn');
+    const downloadPngBtn = document.getElementById('downloadPngBtn');
+
+    let img = null;
+    let imageLoaded = false;
+    let pickBgMode = false;
+    let hasTransparent = false;
+
+    function resetCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#555';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    resetCanvas();
+
+    // Carica immagine
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        img = new Image();
+        img.onload = () => {
+          drawImageFit(img);
+          imageLoaded = true;
+          hasTransparent = false;
+          pickBgBtn.disabled = false;
+          cropBtn.disabled = false;
+          downloadPngBtn.disabled = false;
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Disegna l'immagine adattata al canvas mantenendo proporzioni
+    function drawImageFit(image) {
+      resetCanvas();
+
+      const canvasAspect = canvas.width / canvas.height;
+      const imgAspect = image.width / image.height;
+
+      let drawWidth, drawHeight, offsetX, offsetY;
+
+      if (imgAspect > canvasAspect) {
+        // immagine più larga
+        drawWidth = canvas.width;
+        drawHeight = drawWidth / imgAspect;
+      } else {
+        // immagine più alta
+        drawHeight = canvas.height;
+        drawWidth = drawHeight * imgAspect;
+      }
+
+      offsetX = (canvas.width - drawWidth) / 2;
+      offsetY = (canvas.height - drawHeight) / 2;
+
+      ctx.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
+    }
+
+    // Attiva modalità "seleziona colore sfondo"
+    pickBgBtn.addEventListener('click', () => {
+      if (!imageLoaded) return;
+      pickBgMode = !pickBgMode;
+      pickBgBtn.classList.toggle('active', pickBgMode);
+      pickBgBtn.textContent = pickBgMode
+        ? 'Modalità attiva: clicca sullo sfondo nell\'immagine'
+        : '2) Clicca qui, poi scegli il colore di sfondo sull\'immagine';
+    });
+
+    // Click sul canvas (per scegliere colore sfondo)
+    canvas.addEventListener('click', (e) => {
+      if (!imageLoaded || !pickBgMode) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const x = Math.floor(e.clientX - rect.left);
+      const y = Math.floor(e.clientY - rect.top);
+
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const idx = (y * canvas.width + x) * 4;
+      const r = imageData.data[idx];
+      const g = imageData.data[idx + 1];
+      const b = imageData.data[idx + 2];
+      const a = imageData.data[idx + 3];
+
+      if (a === 0) {
+        // Hai cliccato già su una zona trasparente, non ha senso usare quel colore.
+        return;
+      }
+
+      const tolerance = parseInt(toleranceInput.value, 10);
+
+      makeColorTransparent(imageData, { r, g, b }, tolerance);
+      ctx.putImageData(imageData, 0, 0);
+      hasTransparent = true;
+
+      // Disattiva la modalità dopo la scelta
+      pickBgMode = false;
+      pickBgBtn.classList.remove('active');
+      pickBgBtn.textContent = '2) Clicca qui, poi scegli il colore di sfondo sull\'immagine';
+    });
+
+    // Rende trasparente tutto ciò che è "vicino" al colore cliccato
+    function makeColorTransparent(imageData, color, tolerance) {
+      const data = imageData.data;
+      const len = data.length;
+
+      for (let i = 0; i < len; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        const a = data[i + 3];
+
+        // Distanza semplice in spazio RGB
+        const dr = r - color.r;
+        const dg = g - color.g;
+        const db = b - color.b;
+        const dist = Math.sqrt(dr * dr + dg * dg + db * db);
+
+        if (dist <= tolerance) {
+          // Rendi trasparente
+          data[i + 3] = 0;
+        }
+      }
+    }
+
+    // Ritaglia ai bordi dell'oggetto non trasparente
+    cropBtn.addEventListener('click', () => {
+      if (!imageLoaded) return;
+
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const bounds = getNonTransparentBounds(imageData);
+
+      if (!bounds) {
+        alert('Non trovo pixel non trasparenti da ritagliare!');
+        return;
+      }
+
+      const { minX, minY, maxX, maxY } = bounds;
+      const width = maxX - minX + 1;
+      const height = maxY - minY + 1;
+
+      const croppedData = ctx.createImageData(width, height);
+      const src = imageData.data;
+      const dst = croppedData.data;
+
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const srcIndex = ((y + minY) * canvas.width + (x + minX)) * 4;
+          const dstIndex = (y * width + x) * 4;
+          dst[dstIndex] = src[srcIndex];
+          dst[dstIndex + 1] = src[srcIndex + 1];
+          dst[dstIndex + 2] = src[srcIndex + 2];
+          dst[dstIndex + 3] = src[srcIndex + 3];
+        }
+      }
+
+      // Pulisci canvas e ridisegna il ritaglio centrato
+      resetCanvas();
+      // Metti l'immagine ritagliata su un canvas temporaneo
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = width;
+      tempCanvas.height = height;
+      const tctx = tempCanvas.getContext('2d');
+      tctx.putImageData(croppedData, 0, 0);
+
+      // Disegna il ritaglio nel canvas principale, adattandolo
+      drawImageFit(tempCanvas);
+    });
+
+    // Calcola il rettangolo che contiene tutti i pixel non trasparenti
+    function getNonTransparentBounds(imageData) {
+      const { width, height, data } = imageData;
+      let minX = width, minY = height, maxX = -1, maxY = -1;
+
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const idx = (y * width + x) * 4;
+          const a = data[idx + 3];
+          if (a !== 0) {
+            if (x < minX) minX = x;
+            if (y < minY) minY = y;
+            if (x > maxX) maxX = x;
+            if (y > maxY) maxY = y;
+          }
+        }
+      }
+
+      if (maxX === -1) {
+        // Tutto trasparente
+        return null;
+      }
+
+      return { minX, minY, maxX, maxY };
+    }
+
+    // Scarica PNG 256x256 (base per ICO)
+    downloadPngBtn.addEventListener('click', () => {
+      if (!imageLoaded) return;
+
+      // Prendi l'immagine attuale dal canvas
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const bounds = getNonTransparentBounds(imageData);
+
+      let srcCanvas = document.createElement('canvas');
+      let sctx = srcCanvas.getContext('2d');
+
+      if (bounds) {
+        const { minX, minY, maxX, maxY } = bounds;
+        const width = maxX - minX + 1;
+        const height = maxY - minY + 1;
+        srcCanvas.width = width;
+        srcCanvas.height = height;
+        const croppedData = ctx.createImageData(width, height);
+        const src = imageData.data;
+        const dst = croppedData.data;
+
+        for (let y = 0; y < height; y++) {
+          for (let x = 0; x < width; x++) {
+            const srcIndex = ((y + minY) * canvas.width + (x + minX)) * 4;
+            const dstIndex = (y * width + x) * 4;
+            dst[dstIndex] = src[srcIndex];
+            dst[dstIndex + 1] = src[srcIndex + 1];
+            dst[dstIndex + 2] = src[srcIndex + 2];
+            dst[dstIndex + 3] = src[srcIndex + 3];
+          }
+        }
+
+        sctx.putImageData(croppedData, 0, 0);
+      } else {
+        // Se è tutto trasparente, salvo il canvas così com'è
+        srcCanvas = canvas;
+        sctx = ctx;
+      }
+
+      // Ridimensiona a 256x256
+      const outSize = 256;
+      const outCanvas = document.createElement('canvas');
+      outCanvas.width = outSize;
+      outCanvas.height = outSize;
+      const octx = outCanvas.getContext('2d');
+
+      // Sfondo completamente trasparente
+      octx.clearRect(0, 0, outSize, outSize);
+
+      // Calcola il ridimensionamento mantenendo proporzioni
+      const srcAspect = srcCanvas.width / srcCanvas.height;
+      let drawW, drawH, offX, offY;
+
+      if (srcAspect > 1) {
+        // più largo che alto
+        drawW = outSize;
+        drawH = outSize / srcAspect;
+      } else {
+        drawH = outSize;
+        drawW = outSize * srcAspect;
+      }
+
+      offX = (outSize - drawW) / 2;
+      offY = (outSize - drawH) / 2;
+
+      octx.drawImage(srcCanvas, offX, offY, drawW, drawH);
+
+      const dataURL = outCanvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = dataURL;
+      a.download = 'icon-256.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    });
+  </script>
+</body>
+</html>
