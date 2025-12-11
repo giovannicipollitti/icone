@@ -2,8 +2,18 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <title>Icone</title>
+  <title>Icon Maker - Sfondo nero/bianco → Trasparente</title>
+
+  <!-- Fondamentale per Android / mobile -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
   <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
       font-family: Arial, sans-serif;
       background: #000 url("sfondo.jpg") center center fixed no-repeat;
@@ -12,31 +22,37 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      justify-content: flex-start;
       gap: 10px;
-      padding: 20px;
+      padding: 10px;
+      box-sizing: border-box;
+      min-height: 100vh;
+      overflow: hidden; /* niente scroll della pagina */
     }
 
     h1 {
-      font-size: 22px;
-      margin: 0 0 10px;
+      font-size: 4.5vw; /* si adatta allo schermo */
+      margin: 5px 0 8px;
       text-shadow: 0 0 5px #000;
-	  color: yellow;
+      text-align: center;
     }
 
     .panel {
       background: rgba(0, 0, 0, 0.65);
-      padding: 15px;
+      padding: 10px;
       border-radius: 10px;
       box-shadow: 0 0 10px rgba(0,0,0,0.6);
-      max-width: 550px;
-      width: 100%;
+      max-width: 95vw;
+      width: 95vw;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
+      box-sizing: border-box;
     }
 
     label {
-      font-size: 14px;
+      font-size: 3.4vw;
+      display: block;
     }
 
     input[type="file"],
@@ -46,12 +62,18 @@
       box-sizing: border-box;
     }
 
+    input[type="file"],
+    input[type="range"] {
+      margin-top: 4px;
+    }
+
     button {
       padding: 8px;
       border-radius: 6px;
       border: none;
       cursor: pointer;
       font-weight: bold;
+      font-size: 3.6vw;
       background: #555;
       color: #fff;
       transition: background 0.2s;
@@ -67,33 +89,41 @@
     }
 
     .small {
-      font-size: 12px;
+      font-size: 3vw;
       color: #ddd;
     }
 
     #canvasContainer {
-      margin-top: 10px;
+      margin-top: 8px;
       background: rgba(0, 0, 0, 0.7);
-      padding: 10px;
+      padding: 8px;
       border-radius: 10px;
+      max-width: 95vw;
+      width: 95vw;
+      max-height: 45vh; /* parte bassa dello schermo */
+      box-sizing: border-box;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     canvas {
       background: #222;
       border-radius: 4px;
       image-rendering: pixelated;
-      max-width: 400px;
-      max-height: 400px;
+      max-width: 100%;
+      max-height: 100%;
     }
 
     .row {
       display: flex;
       flex-wrap: wrap;
-      gap: 10px;
+      gap: 8px;
     }
 
     .row > * {
-      flex: 1 1 150px;
+      flex: 1 1 45%;
     }
   </style>
 
@@ -101,17 +131,17 @@
   <link rel="icon" href="favicon.png" type="image/png">
 </head>
 <body>
-  <h1>Crea le tue icone</h1>
+  <h1>Icon Maker (sfondo nero/bianco → trasparente)</h1>
 
   <div class="panel">
     <label>
-      1) Carica la tua immagine:
+      1) Carica immagine (es. la medaglia con sfondo nero o bianco):
       <input type="file" id="fileInput" accept="image/*">
     </label>
 
     <label>
       2) Soglia per il nero/bianco:
-      <span id="thresholdValue">20%</span>
+      <span id="thresholdValue">10%</span>
       <input type="range" id="threshold" min="0" max="80" value="10">
       <span class="small">
         Valore più alto = considera più colori come "nero" o "bianco".<br>
@@ -129,6 +159,8 @@
     </div>
 
     <span class="small">
+      Flusso: carica immagine → rimuovi sfondo nero/bianco → scarica PNG o ICO.<br>
+      Vedi il risultato direttamente nel canvas qui sotto.
     </span>
   </div>
 
@@ -155,6 +187,17 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
 
+    // Adatta il canvas allo schermo verticale
+    function fitCanvasToViewport(imgWidth, imgHeight) {
+      const maxW = window.innerWidth * 0.85;  // 85% larghezza
+      const maxH = window.innerHeight * 0.40; // 40% altezza
+
+      const scale = Math.min(maxW / imgWidth, maxH / imgHeight, 1);
+
+      canvas.width  = imgWidth * scale;
+      canvas.height = imgHeight * scale;
+    }
+
     // Aggiorna etichetta percentuale
     function updateThresholdLabel() {
       thresholdValueSpan.textContent = thresholdInput.value + '%';
@@ -172,10 +215,11 @@
       reader.onload = (event) => {
         img = new Image();
         img.onload = () => {
-          canvas.width = img.width;
-          canvas.height = img.height;
+          // Adattiamo il canvas alla dimensione schermo
+          fitCanvasToViewport(img.width, img.height);
           resetCanvas();
-          ctx.drawImage(img, 0, 0);
+          // Disegniamo già ridimensionata per stare nel canvas
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
           imageLoaded = true;
 
           removeBgBtn.disabled = false;
